@@ -1,0 +1,15 @@
+build 465mb -- can go
+	intermediates 400mb
+	outputs 64 mb
+
+app 6200mb
+	build 465mb -- can go
+	src 5700mb
+		libs 135mb -- can go
+		obj 5,6 GB -- can go
+				
+
+
+
+
+
