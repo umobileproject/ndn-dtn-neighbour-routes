@@ -50,8 +50,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import android.util.Log;
+
 public class NfdcHelper
 {
+
+  private String TAG = "DEBLOA_NfdcHelper";
+
   public NfdcHelper()
   {
     m_face = new Face("localhost");
@@ -196,6 +201,11 @@ public class NfdcHelper
    * format a faceUri
    */
   public static String formatFaceUri(String faceUri) throws FaceUri.CanonizeError {
+    if(faceUri.substring(0,3).equals("dtn")){
+      faceUri = faceUri + ":4550";
+      return new FaceUri(faceUri).toString();
+      // V/RibManager: onNotification: FaceEventNotification(Kind: created, FaceID: 425, RemoteUri: udp4://193.168.1.1:6363, LocalUri: udp4://192.168.1.3:6363, FaceScope: non-local, FacePersistency: persistent, LinkType: point-to-point, Flags: 0)
+    }
     return new FaceUri(faceUri).canonize().toString();
   }
 

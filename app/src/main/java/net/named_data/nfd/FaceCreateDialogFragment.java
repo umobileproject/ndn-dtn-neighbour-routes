@@ -30,8 +30,13 @@ import android.view.LayoutInflater;
 import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.util.Log;
+
+
 
 public class FaceCreateDialogFragment extends DialogFragment {
+
+
   public static interface OnFaceCreateRequested {
     public void
     createFace(String faceUri, boolean isPermanent);

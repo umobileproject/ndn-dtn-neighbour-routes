@@ -56,6 +56,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import android.util.Log;
+
 public class FaceListFragment extends ListFragment implements FaceCreateDialogFragment.OnFaceCreateRequested {
 
   public static FaceListFragment
@@ -491,6 +493,7 @@ public class FaceListFragment extends ListFragment implements FaceCreateDialogFr
   }
 
   private class FaceCreateAsyncTask extends AsyncTask<Void, Void, String> {
+
     public FaceCreateAsyncTask(String faceUri, boolean isPermanent)
     {
       m_faceUri = faceUri;
@@ -504,6 +507,7 @@ public class FaceListFragment extends ListFragment implements FaceCreateDialogFr
       try {
         NfdcHelper nfdcHelper = new NfdcHelper();
         Context context = getActivity().getApplicationContext();
+
         int faceId = nfdcHelper.faceCreate(m_faceUri);
         if (m_isPermanent) {
           PermanentFaceUriAndRouteManager.addPermanentFaceUri(

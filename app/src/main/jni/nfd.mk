@@ -20,6 +20,9 @@ NFD_DAEMON_SRC_FILES := \
     ../nfd-android/custom-logger.cpp \
     ../nfd-android/custom-logger-factory.cpp \
     \
+    daemon/face/dtn-channel.cpp\
+    daemon/face/dtn-transport.cpp\
+    daemon/face/dtn-factory.cpp\
     daemon/face/channel.cpp \
     daemon/face/face-counters.cpp \
     daemon/face/face.cpp \

@@ -37,14 +37,21 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewDebug;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.util.Log;
 
+
+import com.intel.jndn.management.ManagementException;
 import com.intel.jndn.management.types.ForwarderStatus;
 
+import net.named_data.jndn.Name;
+import net.named_data.jndn_xx.util.FaceUri;
 import net.named_data.nfd.service.NfdService;
+import net.named_data.nfd.service.DtnService;
 import net.named_data.nfd.utils.G;
 import net.named_data.nfd.utils.NfdcHelper;
 
@@ -52,6 +59,8 @@ import org.joda.time.Period;
 import org.joda.time.format.PeriodFormat;
 
 public class MainFragment extends Fragment {
+
+  NfdService myInterfaceService;
 
   public static MainFragment newInstance() {
     // Create fragment arguments here (if necessary)
@@ -63,6 +72,9 @@ public class MainFragment extends Fragment {
   {
     super.onCreate(savedInstanceState);
     m_handler = new Handler();
+    //intent = new Intent(getActivity(), DtnService.class);
+    //getActivity().bindService(new Intent(getActivity(),DtnService.class), DtnServiceConnection, Context.BIND_AUTO_CREATE);
+
   }
 
   @Override
@@ -72,6 +84,7 @@ public class MainFragment extends Fragment {
   {
     @SuppressLint("InflateParams")
     View v =  inflater.inflate(R.layout.fragment_main, null);
+
 
     m_nfdStartStopSwitch = (Switch)v.findViewById(R.id.nfd_start_stop_switch);
     m_nfdStartStopSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -114,7 +127,9 @@ public class MainFragment extends Fragment {
   public void onActivityCreated(@Nullable Bundle savedInstanceState)
   {
     super.onActivityCreated(savedInstanceState);
+
     m_sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+
   }
 
   @Override
@@ -123,13 +138,14 @@ public class MainFragment extends Fragment {
     super.onResume();
 
     bindNfdService();
+    bindDtnService();
+
   }
 
   @Override
   public void
   onPause() {
     super.onPause();
-
     unbindNfdService();
     m_handler.removeCallbacks(m_statusUpdateRunnable);
     m_handler.removeCallbacks(m_retryConnectionToNfdService);
@@ -138,6 +154,18 @@ public class MainFragment extends Fragment {
   /**
    * Method that binds the current activity to the NfdService.
    */
+  // DTN -------------------------------------------------------------------------------------------
+  private void
+  bindDtnService() {
+    if (!m_isNfdServiceConnected) {
+      // Bind to Service
+      getActivity().bindService(new Intent(getActivity(), DtnService.class),
+              DtnServiceConnection, Context.BIND_AUTO_CREATE);
+      G.Log("MainFragment::bindNfdService()");
+
+    }
+  }
+
   private void
   bindNfdService() {
     if (!m_isNfdServiceConnected) {
@@ -170,6 +198,7 @@ public class MainFragment extends Fragment {
     sendNfdServiceMessage(NfdService.START_NFD_SERVICE);
   }
 
+  // -----------------------------------------------------------------------------------------------
   private void
   stopNfdService() {
     assert m_isNfdServiceConnected;
@@ -196,6 +225,8 @@ public class MainFragment extends Fragment {
     }
     try {
       Message msg = Message.obtain(null, message);
+
+
       msg.replyTo = m_clientMessenger;
       m_nfdServiceMessenger.send(msg);
     } catch (RemoteException e) {
@@ -255,6 +286,20 @@ public class MainFragment extends Fragment {
     }
   }
 
+  private ServiceConnection DtnServiceConnection = new ServiceConnection() {
+
+    @Override
+    public void onServiceDisconnected(ComponentName name) {
+      m_isDtnServiceConnected = false;
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName name, IBinder service) {
+      m_isDtnServiceConnected = true;
+    }
+  };
+
+
   /**
    * Client ServiceConnection to NfdService.
    */
@@ -279,6 +324,7 @@ public class MainFragment extends Fragment {
       }
 
       G.Log("m_ServiceConnection::onServiceConnected()");
+
     }
 
     @Override
@@ -374,14 +420,17 @@ public class MainFragment extends Fragment {
   /** Button that starts and stops the NFD */
   private Switch m_nfdStartStopSwitch;
 
+
   /** Flag that marks that application is connected to the NfdService */
   private boolean m_isNfdServiceConnected = false;
+  private boolean m_isDtnServiceConnected = false;
 
   /** Client Message Handler */
   private final Messenger m_clientMessenger = new Messenger(new ClientHandler());
 
   /** Messenger connection to NfdService */
   private Messenger m_nfdServiceMessenger = null;
+  //private Messenger m_dtnServiceMessenger = null;
 
   /** ListView holding NFD status information */
   private ViewGroup m_nfdStatusView;

@@ -25,6 +25,8 @@ import android.content.SharedPreferences;
 import java.util.HashSet;
 import java.util.Set;
 
+import android.util.Log;
+
 /**
  * The manager to record and delete permanent faceUris and routes
  */
@@ -42,7 +44,6 @@ public class PermanentFaceUriAndRouteManager {
     SharedPreferences setting = context.getSharedPreferences(PREFS_NAME, Context.MODE_MULTI_PROCESS);
     Set<String> permanentFace = setting.getStringSet(PERMANENT_FACEID, new HashSet<String>());
     Set<String> newPermanentFace = new HashSet<>(permanentFace);
-
     if (newPermanentFace.add(Integer.toString(faceId))) {
       SharedPreferences.Editor editor = setting.edit();
       editor.putStringSet(PERMANENT_FACEID, newPermanentFace);
@@ -103,7 +104,6 @@ public class PermanentFaceUriAndRouteManager {
     SharedPreferences setting = context.getSharedPreferences(PREFS_NAME, Context.MODE_MULTI_PROCESS);
     Set<String> permanentFace = setting.getStringSet(PERMANENT_FACEURI, new HashSet<String>());
     Set<String> newPermanentFace = new HashSet<>(permanentFace);
-
     G.Log(TAG, "Try to record permanent face");
     G.Log(TAG, "Permanent face list has " + permanentFace.size() + " item(s)");
     if (newPermanentFace.add(faceUri)) {
@@ -118,7 +118,6 @@ public class PermanentFaceUriAndRouteManager {
     SharedPreferences setting = context.getSharedPreferences(PREFS_NAME, Context.MODE_MULTI_PROCESS);
     Set<String> permanentRoute = setting.getStringSet(PERMANENT_ROUTE, new HashSet<String>());
     Set<String> newPermanentRoute = new HashSet<>(permanentRoute);
-
     G.Log(TAG, "Try to record permanent route");
     G.Log(TAG, "Permanent route list has " + permanentRoute.size() + " item(s)");
     if (newPermanentRoute.add(prefix + PREFIX_FACEURI_DELIMITER + faceUri)) {

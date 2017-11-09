@@ -18,7 +18,7 @@
  */
 
 #include "nfd-wrapper.hpp"
-
+#include <string>
 #include "daemon/nfd.hpp"
 #include "rib/service.hpp"
 
@@ -31,6 +31,16 @@
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/thread.hpp>
 #include <mutex>
+
+// ------------- DTN
+#include "NFD/daemon/face/dtn-transport.hpp"
+#include "NFD/daemon/face/dtn-channel.hpp"
+
+//#include <android/log.h>
+
+//#define LOG_TAG2 "DEBFIN"
+//#define LOGD2(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG2, __VA_ARGS__)
+// ------------- DTN
 
 NFD_LOG_INIT("NfdWrapper");
 
@@ -102,6 +112,13 @@ public:
       "    idle_timeout 600\n"
       "    keep_alive_interval 25\n"
       "    mcast no\n"
+      "  }\n"
+      "  dtn\n"
+      "  {\n"
+      "    host localhost\n"
+      "    port 4550\n"
+      "    endpointPrefix dtn-node1\n"
+      "    endpointAffix /nfd\n"
       "  }\n"
       "  websocket\n"
       "  {\n"
@@ -205,6 +222,8 @@ static std::map<std::string, std::string> g_params;
 } // namespace nfd
 
 
+
+
 std::map<std::string, std::string>
 getParams(JNIEnv* env, jobject jParams)
 {
@@ -245,10 +264,181 @@ getParams(JNIEnv* env, jobject jParams)
   return params;
 }
 
+/// DTN ____________________________________________________________________________________________
+static JavaVM *jvm;
+
+
+jclass DtnServiceClass;
+jobject DtnServiceObject;
+nfd::DtnChannel *pDtnChannel;
+jmethodID mid;
+
+
+
+
+jint JNI_OnLoad(JavaVM* vm, void* reserved)
+{
+    JNIEnv* env;
+    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
+        return -1;
+    }
+
+    jclass cls = env->FindClass("net/named_data/nfd/service/DtnService");
+    DtnServiceClass = (jclass)env->NewGlobalRef(cls);
+    env->DeleteLocalRef(cls);
+
+    mid = env->GetMethodID(DtnServiceClass, "sendMessage", "(Ljava/lang/String;[B)V");
+
+    int gotVM = env->GetJavaVM(&jvm);
+
+
+
+
+    return JNI_VERSION_1_6;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// convert jstring to std::string
+
+std::string jstring2string(JNIEnv *env, jstring jStr) {
+    if (!jStr)
+        return "";
+
+    std::vector<char> charsCode;
+    const jchar *chars = env->GetStringChars(jStr, NULL);
+    jsize len = env->GetStringLength(jStr);
+    jsize i;
+
+    for( i=0;i<len; i++){
+        int code = (int)chars[i];
+        charsCode.push_back( code );
+    }
+    env->ReleaseStringChars(jStr, chars);
+
+    return  std::string(charsCode.begin(), charsCode.end());
+}
+
+
+
+// Queue Received Bundle
+JNIEXPORT void JNICALL
+Java_net_named_1data_nfd_service_DtnService_queueBundleJNI(
+        JNIEnv *env,
+        jobject obj,
+        jstring rE,
+        jbyteArray pl){
+        /*
+        // DELAY
+                struct timespec res;
+                clock_gettime(CLOCK_REALTIME, &res);
+                double now_ms =  1000.0 * res.tv_sec + (double) res.tv_nsec / 1e6;
+                LOGD2(",RCVstart, , ,%f",now_ms);
+                // DELAY*/
+        int len = (int)(env->GetArrayLength(pl));
+
+        jbyte* temp = env->GetByteArrayElements(pl,NULL);
+
+        uint8_t* payload = (uint8_t*) temp;
+        // TODO 3 this is terrible
+        std::string remoteEndpoint = jstring2string(env,rE);
+
+        pDtnChannel->queueBundle(remoteEndpoint, payload, len);
+
+        env->ReleaseByteArrayElements(pl, temp, 0);
+
+        /*// DELAY
+                //struct timespec res;
+                clock_gettime(CLOCK_REALTIME, &res);
+                now_ms =  1000.0 * res.tv_sec + (double) res.tv_nsec / 1e6;
+                LOGD2(",RCVend, , , ,%f",now_ms);
+                // DELAY*/
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void
+registerChannelToWrapper(nfd::DtnChannel *pChannel);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Send packet to IBRDTN.
+void
+sendToIBRDTN(std::string destination, std::string data){
+
+/*// DELAY
+        struct timespec res;
+        clock_gettime(CLOCK_REALTIME, &res);
+        double now_ms =  1000.0 * res.tv_sec + (double) res.tv_nsec / 1e6;
+        LOGD2(",SNDstart,%f",now_ms);
+        // DELAY*/
+        JNIEnv *env;
+                if (jvm != NULL){
+
+                    int attachOK = jvm->AttachCurrentThread(&env, NULL);
+                    // TODO 1 was stupid
+                    int envStat = jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
+
+                }
+
+
+
+
+
+
+        const char *cDestination = destination.c_str();
+        jstring jDestination = env->NewStringUTF(cDestination);
+        const uint8_t* ui8Data = reinterpret_cast<const uint8_t*>(&data[0]);
+
+        jbyte* tempjData = (jbyte*)ui8Data;
+
+
+        jbyteArray jData = env->NewByteArray(data.length());
+
+        env->SetByteArrayRegion(jData,0,data.length(),tempjData);
+        // TODO add null exception HANDLING
+        env->CallVoidMethod(DtnServiceObject,mid,jDestination,jData);
+        /*// DELAY
+                //struct timespec res;
+                clock_gettime(CLOCK_REALTIME, &res);
+                now_ms =  1000.0 * res.tv_sec + (double) res.tv_nsec / 1e6;
+                LOGD2(",SNDend, ,%f",now_ms);
+                // DELAY*/
+        jvm->DetachCurrentThread();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Get the DTN channel object so that it can be passed by queueBundle
+void
+registerChannelToWrapper(nfd::DtnChannel *pChannel){
+    pDtnChannel = pChannel;
+}
+
+// Get the Java VM for later calls (sendToIBRDTN, startJavaClient (?))
+JNIEXPORT void JNICALL
+Java_net_named_1data_nfd_service_DtnService_initializeNativeInterface(
+        JNIEnv *env,
+        jobject obj){
+
+    int gotVM = env->GetJavaVM(&jvm);
+
+    DtnServiceObject = env->NewGlobalRef(obj);
+
+}
+
+
+
+/// DTN ____________________________________________________________________________________________
 
 JNIEXPORT void JNICALL
 Java_net_named_1data_nfd_service_NfdService_startNfd(JNIEnv* env, jclass, jobject jParams)
 {
+
+
   if (nfd::g_runner.get() == nullptr) {
     nfd::g_params = getParams(env, jParams);
 

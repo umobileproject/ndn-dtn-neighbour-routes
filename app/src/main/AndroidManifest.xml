@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="de.tubs.ibr.dtn.permission.DTN_COMMUNICATION"/>
 
     <application
         android:allowBackup="true"
@@ -33,6 +34,20 @@
                 <action android:name="net.named_data.nfd.START_NFD_SERVICE" />
             </intent-filter>
         </service>
+        <service
+            android:name=".service.DtnService"
+            android:process="net.named_data.nfd.service.NfdService"
+            android:icon="@drawable/ic_launcher"
+            android:label="@string/service_name"
+            android:exported="true" >
+            <!--
+            <intent-filter>
+                <action android:name="net.named_data.nfd.START_DTN_SERVICE" />
+                android:exported="true"
+                android:process="net.named_data.nfd.service.DtnService"
+            </intent-filter>
+            -->
+        </service>
 
         <receiver
             android:name="net.named_data.nfd.utils.ConnectivityChangeReceiver"
@@ -40,6 +55,19 @@
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
                 <action android:name="android.net.wifi.WIFI_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="net.named_data.nfd.utils.DtnBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="de.tubs.ibr.dtn.permission.DTN_SERVER" >
+
+            <!-- Add intent filter for notification of incoming bundles -->
+            <intent-filter>
+                <action android:name="de.tubs.ibr.dtn.intent.RECEIVE" />
+                <category android:name="net.named_data.nfd" />
             </intent-filter>
         </receiver>
 

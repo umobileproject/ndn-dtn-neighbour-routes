@@ -17,6 +17,8 @@
  * NFD Android, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+
 package net.named_data.nfd.service;
 
 import android.app.Service;
@@ -28,8 +30,12 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.util.Log;
+
+import com.intel.jndn.management.ManagementException;
 
 import net.named_data.jndn.Name;
+import net.named_data.jndn_xx.util.FaceUri;
 import net.named_data.nfd.utils.G;
 import net.named_data.nfd.utils.NfdcHelper;
 import net.named_data.nfd.utils.PermanentFaceUriAndRouteManager;
@@ -75,6 +81,8 @@ public class NfdService extends Service {
     System.loadLibrary("nfd-wrapper");
   }
 
+  //public native static String
+  //stringFromJNI();
   /**
    * Native API for starting the NFD.
    *
@@ -122,15 +130,16 @@ public class NfdService extends Service {
     m_nfdServiceMessenger = new Messenger(new NfdServiceMessageHandler());
   }
 
+  // Here servicesStartNFD() is called. Then createPermanentFaceUriAndRoute() is called
   @Override
   public int
   onStartCommand(Intent intent, int flags, int startId) {
     G.Log(TAG, "NFDService::onStartCommand()");
-
     serviceStartNfd();
+
     createPermanentFaceUriAndRoute();
 
-    // Service is restarted when killed.
+      // Service is restarted when killed.
     // Pending intents delivered; null intent redelivered otherwise.
     return START_STICKY;
   }
@@ -158,7 +167,6 @@ public class NfdService extends Service {
     m_nfdServiceMessenger = null;
   }
 
-  /////////////////////////////////////////////////////////////////////////////
 
   /**
    * Thread safe way of starting the NFD and updating the
@@ -190,10 +198,10 @@ public class NfdService extends Service {
       G.Log(TAG, "serviceStartNfd(): NFD Service already running!");
     }
   }
-
+  // Permanent FACES and Routes are created here using Permanent...ger.java and NfdcHelper.java
   private void createPermanentFaceUriAndRoute() {
     final long checkInterval = 1000;
-    if (isNfdRunning()) {
+      if (isNfdRunning()) {
       G.Log(TAG, "createPermanentFaceUriAndRoute: NFD is running, start executing task.");
       new FaceCreateAsyncTask(getApplicationContext()).execute();
       new RouteCreateAsyncTask(getApplicationContext()).execute();
@@ -276,7 +284,7 @@ public class NfdService extends Service {
         Set<String[]> prefixAndFacePairs = PermanentFaceUriAndRouteManager.getPermanentRoutes(this.context);
         G.Log(TAG, "Permanent face list has " + prefixAndFacePairs.size() + " item(s)");
         for (String[] prefixAndFaceUri : prefixAndFacePairs) {
-          int faceId = nfdcHelper.faceCreate(prefixAndFaceUri[1]);
+            int faceId = nfdcHelper.faceCreate(prefixAndFaceUri[1]);
           nfdcHelper.ribRegisterPrefix(new Name(prefixAndFaceUri[0]), faceId, 10, true, false);
           G.Log(TAG, "Create permanent route" + prefixAndFaceUri[0] + " - " + prefixAndFaceUri[1]);
         }
@@ -292,6 +300,9 @@ public class NfdService extends Service {
   /**
    * Message handler for the the NFD Service.
    */
+
+  //My: This is a handler. It is passed as input onCreate to the messenger class used for interprocess communication.
+    //If the incoming message is 1 then serviceStartNfd is called. also reaplyToClient is called
   private class NfdServiceMessageHandler extends Handler {
 
     @Override

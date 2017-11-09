@@ -27,6 +27,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.util.Log;
 
 import com.intel.jndn.management.types.FaceStatus;
 import com.intel.jndn.management.types.RibEntry;
@@ -34,6 +35,7 @@ import com.intel.jndn.management.types.RibEntry;
 import net.named_data.nfd.utils.G;
 
 import java.util.ArrayList;
+//import de.tubs.ibr.dtn.api.BundleID;
 
 /**
  * Main activity that is loaded for the NFD app.
@@ -44,6 +46,7 @@ public class MainActivity extends ActionBarActivity
                FaceListFragment.Callbacks,
                RouteListFragment.Callbacks
 {
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
